@@ -20,18 +20,39 @@ router.post('/', (req, res) => {
 });
 
 router.post('/:id/heartbeat', (req, res) => {
-  const result = monitorService.heartbeatMonitor(req.params.id);
-  res.status(200).json({ message: 'Heartbeat received', result });
+  try {
+    const result = monitorService.heartbeatMonitor(req.params.id);
+    return res.status(200).json({ message: 'Heartbeat received', result });
+  } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Unexpected heartbeat error' });
+  }
 });
 
 router.post('/:id/pause', (req, res) => {
-  const result = monitorService.pauseMonitor(req.params.id);
-  res.status(200).json({ message: 'Monitor paused', result });
+  try {
+    const result = monitorService.pauseMonitor(req.params.id);
+    return res.status(200).json({ message: 'Monitor paused', result });
+  } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Unexpected pause error' });
+  }
 });
 
 router.post('/:id/resume', (req, res) => {
-  const result = monitorService.resumeMonitor(req.params.id);
-  res.status(200).json({ message: 'Monitor resumed', result });
+  try {
+    const result = monitorService.resumeMonitor(req.params.id);
+    return res.status(200).json({ message: 'Monitor resumed', result });
+  } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Unexpected resume error' });
+  }
 });
 
 router.get('/', (req, res) => {

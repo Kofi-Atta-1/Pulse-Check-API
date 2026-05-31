@@ -11,6 +11,55 @@ const swaggerSpec = {
       description: 'Development server'
     }
   ],
+  components: {
+    schemas: {
+      MonitorCreateRequest: {
+        type: 'object',
+        required: ['id', 'timeout', 'alert_email'],
+        properties: {
+          id: {
+            type: 'string',
+            example: 'device-123'
+          },
+          timeout: {
+            type: 'number',
+            description: 'Timeout in milliseconds before the monitor expires',
+            example: 60000
+          },
+          alert_email: {
+            type: 'string',
+            example: 'admin@critmon.com'
+          },
+          name: {
+            type: 'string',
+            example: 'Solar Farm A'
+          }
+        }
+      },
+      MonitorResponse: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          alert_email: { type: 'string' },
+          timeout: { type: 'number' },
+          status: { type: 'string', example: 'ACTIVE' },
+          lastHeartbeat: { type: 'number', format: 'int64' },
+          createdAt: { type: 'number', format: 'int64' },
+          updatedAt: { type: 'number', format: 'int64' }
+        }
+      },
+      HeartbeatResponse: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          status: { type: 'string', example: 'ACTIVE' },
+          lastHeartbeat: { type: 'number', format: 'int64' },
+          updatedAt: { type: 'number', format: 'int64' }
+        }
+      }
+    }
+  },
   paths: {
     '/monitors': {
       post: {
@@ -20,34 +69,18 @@ const swaggerSpec = {
           required: true,
           content: {
             'application/json': {
-              schema: {
-                type: 'object',
-                required: ['id', 'timeout', 'alert_email'],
-                properties: {
-                  id: {
-                    type: 'string',
-                    example: 'device-123'
-                  },
-                  timeout: {
-                    type: 'number',
-                    example: 60
-                  },
-                  alert_email: {
-                    type: 'string',
-                    example: 'admin@critmon.com'
-                  },
-                  name: {
-                    type: 'string',
-                    example: 'Solar Farm A'
-                  }
-                }
-              }
+              schema: { $ref: '#/components/schemas/MonitorCreateRequest' }
             }
           }
         },
         responses: {
           201: {
-            description: 'Monitor created successfully'
+            description: 'Monitor created successfully',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/MonitorResponse' }
+              }
+            }
           },
           400: {
             description: 'Validation error'
@@ -62,7 +95,20 @@ const swaggerSpec = {
         tags: ['Monitors'],
         responses: {
           200: {
-            description: 'List of monitors'
+            description: 'List of monitors',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    monitors: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/MonitorResponse' }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -81,7 +127,15 @@ const swaggerSpec = {
         ],
         responses: {
           200: {
-            description: 'Monitor details'
+            description: 'Monitor details',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/MonitorResponse' }
+              }
+            }
+          },
+          404: {
+            description: 'Monitor not found'
           }
         }
       }
@@ -100,7 +154,12 @@ const swaggerSpec = {
         ],
         responses: {
           200: {
-            description: 'Heartbeat received'
+            description: 'Heartbeat received',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/HeartbeatResponse' }
+              }
+            }
           },
           404: {
             description: 'Monitor not found'
@@ -122,7 +181,12 @@ const swaggerSpec = {
         ],
         responses: {
           200: {
-            description: 'Monitor paused'
+            description: 'Monitor paused',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/MonitorResponse' }
+              }
+            }
           },
           404: {
             description: 'Monitor not found'
@@ -144,7 +208,12 @@ const swaggerSpec = {
         ],
         responses: {
           200: {
-            description: 'Monitor resumed'
+            description: 'Monitor resumed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/MonitorResponse' }
+              }
+            }
           },
           404: {
             description: 'Monitor not found'

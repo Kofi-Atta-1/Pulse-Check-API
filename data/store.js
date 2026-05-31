@@ -1,3 +1,4 @@
 const monitors = new Map();
+const monitorTimers = new Map();
 
-module.exports = { monitors };
+module.exports = { monitors, monitorTimers };

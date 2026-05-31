@@ -1,4 +1,4 @@
-const { monitors } = require('../data/store');
+const { monitors, monitorTimers } = require('../data/store');
 
 const REQUIRED_FIELDS = ['id', 'timeout', 'alert_email'];
 
@@ -37,6 +37,51 @@ const validateMonitorPayload = (payload) => {
   }
 };
 
+const clearMonitorTimer = (id) => {
+  const timer = monitorTimers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    monitorTimers.delete(id);
+  }
+};
+
+const logTimeoutAlert = (monitor) => {
+  const alert = {
+    event: 'timeout',
+    monitor_id: monitor.id,
+    status: 'DOWN',
+    alert_email: monitor.alert_email,
+    timeout: monitor.timeout,
+    timestamp: new Date().toISOString(),
+    message: `Monitor '${monitor.id}' did not receive a heartbeat within ${monitor.timeout}ms.`
+  };
+
+  console.log(JSON.stringify(alert));
+};
+
+const expireMonitor = (id) => {
+  const monitor = monitors.get(id);
+  if (!monitor) {
+    return;
+  }
+
+  monitor.status = 'DOWN';
+  monitor.updatedAt = Date.now();
+  clearMonitorTimer(id);
+  logTimeoutAlert(monitor);
+};
+
+const startMonitorTimer = (monitor) => {
+  if (!monitor || typeof monitor.timeout !== 'number' || monitor.timeout <= 0) {
+    return;
+  }
+
+  clearMonitorTimer(monitor.id);
+
+  const timer = setTimeout(() => expireMonitor(monitor.id), monitor.timeout);
+  monitorTimers.set(monitor.id, timer);
+};
+
 const createMonitor = (payload) => {
   validateMonitorPayload(payload);
 
@@ -53,12 +98,14 @@ const createMonitor = (payload) => {
     name: payload.name ? payload.name.trim() : id,
     alert_email: payload.alert_email.trim(),
     timeout: Number(payload.timeout),
-    state: 'ACTIVE',
+    status: 'ACTIVE',
+    lastHeartbeat: timestamp,
     createdAt: timestamp,
     updatedAt: timestamp
   };
 
   monitors.set(id, monitor);
+  startMonitorTimer(monitor);
   return monitor;
 };
 
@@ -66,11 +113,71 @@ const getMonitor = (id) => monitors.get(id) || null;
 
 const listMonitors = () => Array.from(monitors.values());
 
-const pauseMonitor = (id) => null;
+const heartbeatMonitor = (id) => {
+  const monitor = monitors.get(id);
+  if (!monitor) {
+    const error = new Error(`Monitor with id '${id}' does not exist`);
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
 
-const resumeMonitor = (id) => null;
+  if (monitor.status === 'PAUSED') {
+    monitor.status = 'ACTIVE';
+  }
 
-const heartbeatMonitor = (id) => null;
+  if (monitor.status === 'DOWN') {
+    monitor.status = 'ACTIVE';
+  }
+
+  monitor.lastHeartbeat = Date.now();
+  monitor.updatedAt = monitor.lastHeartbeat;
+  startMonitorTimer(monitor);
+
+  return {
+    id: monitor.id,
+    status: monitor.status,
+    lastHeartbeat: monitor.lastHeartbeat,
+    updatedAt: monitor.updatedAt
+  };
+};
+
+const pauseMonitor = (id) => {
+  const monitor = monitors.get(id);
+  if (!monitor) {
+    const error = new Error(`Monitor with id '${id}' does not exist`);
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  monitor.status = 'PAUSED';
+  monitor.updatedAt = Date.now();
+  clearMonitorTimer(id);
+
+  return {
+    id: monitor.id,
+    status: monitor.status,
+    updatedAt: monitor.updatedAt
+  };
+};
+
+const resumeMonitor = (id) => {
+  const monitor = monitors.get(id);
+  if (!monitor) {
+    const error = new Error(`Monitor with id '${id}' does not exist`);
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  monitor.status = 'UP';
+  monitor.updatedAt = Date.now();
+  startMonitorTimer(monitor);
+
+  return {
+    id: monitor.id,
+    status: monitor.status,
+    updatedAt: monitor.updatedAt
+  };
+};
 
 module.exports = {
   createMonitor,
