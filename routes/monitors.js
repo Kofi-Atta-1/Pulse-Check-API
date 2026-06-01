@@ -21,8 +21,8 @@ router.post('/', (req, res) => {
 
 router.post('/:id/heartbeat', (req, res) => {
   try {
-    const result = monitorService.heartbeatMonitor(req.params.id);
-    return res.status(200).json({ message: 'Heartbeat received', result });
+    const monitor = monitorService.heartbeatMonitor(req.params.id);
+    return res.status(200).json({ message: 'Heartbeat received', monitor });
   } catch (error) {
     if (error.code === 'NOT_FOUND') {
       return res.status(404).json({ error: error.message });
@@ -33,8 +33,8 @@ router.post('/:id/heartbeat', (req, res) => {
 
 router.post('/:id/pause', (req, res) => {
   try {
-    const result = monitorService.pauseMonitor(req.params.id);
-    return res.status(200).json({ message: 'Monitor paused', result });
+    const monitor = monitorService.pauseMonitor(req.params.id);
+    return res.status(200).json({ message: 'Monitor paused', monitor });
   } catch (error) {
     if (error.code === 'NOT_FOUND') {
       return res.status(404).json({ error: error.message });
@@ -45,8 +45,8 @@ router.post('/:id/pause', (req, res) => {
 
 router.post('/:id/resume', (req, res) => {
   try {
-    const result = monitorService.resumeMonitor(req.params.id);
-    return res.status(200).json({ message: 'Monitor resumed', result });
+    const monitor = monitorService.resumeMonitor(req.params.id);
+    return res.status(200).json({ message: 'Monitor resumed', monitor });
   } catch (error) {
     if (error.code === 'NOT_FOUND') {
       return res.status(404).json({ error: error.message });
@@ -60,7 +60,11 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-  res.json({ monitor: monitorService.getMonitor(req.params.id) });
+  const monitor = monitorService.getMonitor(req.params.id);
+  if (!monitor) {
+    return res.status(404).json({ error: `Monitor with id '${req.params.id}' does not exist` });
+  }
+  return res.json({ monitor });
 });
 
 module.exports = router;

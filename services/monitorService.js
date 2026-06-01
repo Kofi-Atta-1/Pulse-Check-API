@@ -65,10 +65,26 @@ const expireMonitor = (id) => {
     return;
   }
 
+  // If the monitor is not active when the timer fires, it is likely stale.
+  if (monitor.status !== 'ACTIVE') {
+    clearMonitorTimer(id);
+    return;
+  }
+
   monitor.status = 'DOWN';
   monitor.updatedAt = Date.now();
   clearMonitorTimer(id);
   logTimeoutAlert(monitor);
+};
+
+const getExistingMonitor = (id) => {
+  const monitor = monitors.get(id);
+  if (!monitor) {
+    const error = new Error(`Monitor with id '${id}' does not exist`);
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
+  return monitor;
 };
 
 const startMonitorTimer = (monitor) => {
@@ -114,18 +130,9 @@ const getMonitor = (id) => monitors.get(id) || null;
 const listMonitors = () => Array.from(monitors.values());
 
 const heartbeatMonitor = (id) => {
-  const monitor = monitors.get(id);
-  if (!monitor) {
-    const error = new Error(`Monitor with id '${id}' does not exist`);
-    error.code = 'NOT_FOUND';
-    throw error;
-  }
+  const monitor = getExistingMonitor(id);
 
-  if (monitor.status === 'PAUSED') {
-    monitor.status = 'ACTIVE';
-  }
-
-  if (monitor.status === 'DOWN') {
+  if (monitor.status === 'PAUSED' || monitor.status === 'DOWN') {
     monitor.status = 'ACTIVE';
   }
 
@@ -133,50 +140,29 @@ const heartbeatMonitor = (id) => {
   monitor.updatedAt = monitor.lastHeartbeat;
   startMonitorTimer(monitor);
 
-  return {
-    id: monitor.id,
-    status: monitor.status,
-    lastHeartbeat: monitor.lastHeartbeat,
-    updatedAt: monitor.updatedAt
-  };
+  return monitor;
 };
 
 const pauseMonitor = (id) => {
-  const monitor = monitors.get(id);
-  if (!monitor) {
-    const error = new Error(`Monitor with id '${id}' does not exist`);
-    error.code = 'NOT_FOUND';
-    throw error;
-  }
+  const monitor = getExistingMonitor(id);
 
+  // Stop the active timer and freeze the monitor in PAUSED state.
+  // This ensures no timeout alert can fire while the monitor is paused.
   monitor.status = 'PAUSED';
   monitor.updatedAt = Date.now();
   clearMonitorTimer(id);
 
-  return {
-    id: monitor.id,
-    status: monitor.status,
-    updatedAt: monitor.updatedAt
-  };
+  return monitor;
 };
 
 const resumeMonitor = (id) => {
-  const monitor = monitors.get(id);
-  if (!monitor) {
-    const error = new Error(`Monitor with id '${id}' does not exist`);
-    error.code = 'NOT_FOUND';
-    throw error;
-  }
+  const monitor = getExistingMonitor(id);
 
-  monitor.status = 'UP';
+  monitor.status = 'ACTIVE';
   monitor.updatedAt = Date.now();
   startMonitorTimer(monitor);
 
-  return {
-    id: monitor.id,
-    status: monitor.status,
-    updatedAt: monitor.updatedAt
-  };
+  return monitor;
 };
 
 module.exports = {

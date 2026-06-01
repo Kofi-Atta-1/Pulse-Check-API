@@ -49,13 +49,26 @@ const swaggerSpec = {
           updatedAt: { type: 'number', format: 'int64' }
         }
       },
-      HeartbeatResponse: {
+      MonitorActionResponse: {
         type: 'object',
         properties: {
-          id: { type: 'string' },
-          status: { type: 'string', example: 'ACTIVE' },
-          lastHeartbeat: { type: 'number', format: 'int64' },
-          updatedAt: { type: 'number', format: 'int64' }
+          message: { type: 'string' },
+          monitor: { $ref: '#/components/schemas/MonitorResponse' }
+        }
+      },
+      MonitorListResponse: {
+        type: 'object',
+        properties: {
+          monitors: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/MonitorResponse' }
+          }
+        }
+      },
+      MonitorGetResponse: {
+        type: 'object',
+        properties: {
+          monitor: { $ref: '#/components/schemas/MonitorResponse' }
         }
       }
     }
@@ -78,7 +91,7 @@ const swaggerSpec = {
             description: 'Monitor created successfully',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/MonitorResponse' }
+                schema: { $ref: '#/components/schemas/MonitorActionResponse' }
               }
             }
           },
@@ -98,15 +111,7 @@ const swaggerSpec = {
             description: 'List of monitors',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    monitors: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/MonitorResponse' }
-                    }
-                  }
-                }
+                schema: { $ref: '#/components/schemas/MonitorListResponse' }
               }
             }
           }
@@ -130,7 +135,7 @@ const swaggerSpec = {
             description: 'Monitor details',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/MonitorResponse' }
+                schema: { $ref: '#/components/schemas/MonitorGetResponse' }
               }
             }
           },
@@ -157,7 +162,7 @@ const swaggerSpec = {
             description: 'Heartbeat received',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/HeartbeatResponse' }
+                schema: { $ref: '#/components/schemas/MonitorActionResponse' }
               }
             }
           },
@@ -184,7 +189,7 @@ const swaggerSpec = {
             description: 'Monitor paused',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/MonitorResponse' }
+                schema: { $ref: '#/components/schemas/MonitorActionResponse' }
               }
             }
           },
@@ -211,7 +216,7 @@ const swaggerSpec = {
             description: 'Monitor resumed',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/MonitorResponse' }
+                schema: { $ref: '#/components/schemas/MonitorActionResponse' }
               }
             }
           },
